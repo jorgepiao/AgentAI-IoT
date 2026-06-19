@@ -1,0 +1,16 @@
+# Web Framework / API Gateway
+fastapi>=0.115.0
+uvicorn[standard]>=0.34.0
+
+# Validación y Guardrails
+pydantic>=2.0
+pydantic-settings>=2.0
+
+# Comunicación IoT (MQTT)
+paho-mqtt>=2.0
+
+# Cliente HTTP para inferencia local (Ollama/vLLM)
+httpx>=0.28.0
+
+# Variables de entorno
+python-dotenv>=1.0

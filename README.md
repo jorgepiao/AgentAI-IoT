@@ -166,6 +166,49 @@ curl -X POST http://localhost:8000/chat \
   -d '{"message": "Enciende las luces de la sala"}'
 ```
 
+## Dashboard de Prueba
+
+Interfaz web independiente para probar el sistema visualmente.
+
+```
+agentai-iot/
+├── dashboard.html    ← Ábrelo en el navegador (archivo único, sin dependencias)
+└── scripts/          ← Herramientas CLI (próximamente)
+```
+
+**Cómo usarlo:**
+
+1. Inicia el servidor: `uvicorn src.main:app --reload`
+2. Abre `dashboard.html` en Chrome/Edge (doble click)
+3. El dashboard se conecta automáticamente a `http://localhost:8000`
+
+**Qué muestra:**
+
+| Panel | Descripción |
+|-------|-------------|
+| Chat | Envía comandos en lenguaje natural, ve las respuestas validadas |
+| Dispositivos | Estado actual de luces y clima (ON/OFF, temperatura, brillo) |
+| Sensores | Lecturas de telemetría (temperatura, humedad, luminosidad) |
+| Skills | Herramientas disponibles por cada skill |
+| Trazas | Historial de llamadas API y eventos del sistema |
+
+**Agregar nuevos dispositivos o sensores:**
+
+Edita los arreglos `DEVICES` o `SENSORS` al inicio del `<script>` en `dashboard.html`:
+
+```javascript
+const DEVICES = [
+  { id: "cocina.luz", room: "Cocina", label: "Luz", icon: "💡", type: "light" },
+  // ...
+];
+const SENSORS = [
+  { topic: "cocina/sensor/temperatura", room: "Cocina", label: "Temperatura", unit: "°C", icon: "🌡️" },
+  // ...
+];
+```
+
+El dashboard renderiza automáticamente las nuevas entradas.
+
 ## Licencia
 
 MIT

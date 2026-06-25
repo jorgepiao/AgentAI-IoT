@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AgentAI IoT — Dashboard</title>
+<style>
+:root {
+  --bg: #0d1117;
+  --surface: #161b22;
+  --border: #30363d;
+  --text: #e6edf3;
+  --text-dim: #8b949e;
+  --accent: #2ea043;
+  --accent-dim: #1a5c2a;
+  --warn: #d29922;
+  --err: #f85149;
+  --font: system-ui, -apple-system, sans-serif;
+  --mono: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', 'Consolas', monospace;
+  --radius: 8px;
+  --shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font);
+  display: flex;
+  justify-content: center;
+  min-height: 100vh;
+}
+.app {
+  width: min(1400px, 100%);
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ─── Header ─── */
+header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  flex-wrap: wrap;
+}
+header h1 {
+  font-size: 18px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+header .badge {
+  font-size: 11px;
+  padding: 2px 10px;
+  border-radius: 20px;
+  background: var(--accent-dim);
+  color: var(--accent);
+  font-weight: 500;
+}
+.badge.err { background: #3d1214; color: var(--err); }
+.badge.warn { background: #3d2e00; color: var(--warn); }
+header .spacer { flex: 1; }
+header .stat {
+  font-size: 12px;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+header .stat .dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  display: inline-block;
+}
+.dot.green { background: var(--accent); }
+.dot.red { background: var(--err); }
+.dot.yellow { background: var(--warn); }
+
+/* ─── Grid ─── */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: 12px;
+  flex: 1;
+  min-height: 0;
+}
+@media (max-width: 800px) {
+  .main-grid { grid-template-columns: 1fr; }
+}
+
+/* ─── Cards ─── */
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.card-header {
+  padding: 10px 14px;
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  color: var(--text-dim);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.card-body { padding: 12px 14px; flex: 1; overflow-y: auto; }
+.card-body:empty::after {
+  content: "—";
+  color: var(--text-dim);
+  font-size: 13px;
+}
+
+/* ─── Chat ─── */
+.chat-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: 12px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  min-height: 200px;
+  max-height: 400px;
+}
+.msg {
+  padding: 8px 12px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  line-height: 1.5;
+  max-width: 90%;
+}
+.msg.user {
+  background: #1f2937;
+  align-self: flex-end;
+  border-bottom-right-radius: 4px;
+}
+.msg.system {
+  background: #0d2818;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.msg.error {
+  background: #3d1214;
+  align-self: flex-start;
+  border-bottom-left-radius: 4px;
+  font-family: var(--mono);
+  font-size: 12px;
+}
+.chat-input-row {
+  display: flex;
+  gap: 8px;
+  padding: 10px 14px;
+  border-top: 1px solid var(--border);
+}
+.chat-input-row input {
+  flex: 1;
+  padding: 8px 12px;
+  background: #0d1117;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 13px;
+  outline: none;
+  font-family: var(--font);
+}
+.chat-input-row input:focus { border-color: var(--accent); }
+.chat-input-row button {
+  padding: 8px 16px;
+  background: var(--accent);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: opacity .15s;
+}
+.chat-input-row button:hover { opacity: .85; }
+.chat-input-row button:disabled { opacity: .4; cursor: not-allowed; }
+
+/* ─── Devices ─── */
+.device-card {
+  padding: 8px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 13px;
+}
+.device-card:last-child { margin-bottom: 0; }
+.device-card .top {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.device-card .name { font-weight: 500; }
+.device-card .status { font-family: var(--mono); font-size: 12px; }
+.device-card .status.on { color: var(--accent); }
+.device-card .status.off { color: var(--err); }
+.device-card .status.unknown { color: var(--text-dim); }
+.device-card .meta { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.room-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  margin: 8px 0 4px;
+}
+.room-label:first-child { margin-top: 0; }
+
+/* ─── Sensors ─── */
+.sensor-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+.sensor-item {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  font-size: 12px;
+  display: flex;
+  justify-content: space-between;
+}
+.sensor-item .val { font-family: var(--mono); color: var(--accent); }
+.sensor-item .val.na { color: var(--text-dim); }
+
+/* ─── Skills ─── */
+.skill-item {
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  margin-bottom: 6px;
+  font-size: 12px;
+}
+.skill-item:last-child { margin-bottom: 0; }
+.skill-item .name { font-weight: 500; }
+.skill-item .tools { color: var(--text-dim); font-size: 11px; margin-top: 2px; }
+
+/* ─── Traces ─── */
+.trace-area {
+  font-family: var(--mono);
+  font-size: 11px;
+  padding: 8px 14px;
+  max-height: 120px;
+  overflow-y: auto;
+  line-height: 1.6;
+}
+.trace-area .t { color: var(--text-dim); }
+.trace-area .ok { color: var(--accent); }
+.trace-area .fail { color: var(--err); }
+.trace-area .info { color: var(--warn); }
+
+/* ─── Footer ─── */
+footer {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  color: var(--text-dim);
+  padding: 8px 4px;
+}
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- ═══ Header ═══ -->
+  <header id="header">
+    <h1>🔧 AgentAI IoT</h1>
+    <span class="badge" id="modeBadge">—</span>
+    <span class="spacer"></span>
+    <span class="stat" id="apiStat"><span class="dot yellow"></span> API</span>
+    <span class="stat" id="skillStat">📦 <span id="skillCount">0</span> skills</span>
+    <span class="stat" id="modelStat">🤖 <span id="modelName">—</span></span>
+  </header>
+
+  <!-- ═══ Main Grid ═══ -->
+  <div class="main-grid">
+
+    <!-- ─── Left Column ─── -->
+    <div style="display:flex;flex-direction:column;gap:12px;min-height:0;">
+
+      <!-- Chat -->
+      <div class="card" style="flex:2;">
+        <div class="card-header">💬 Chat</div>
+        <div class="chat-messages" id="chatMessages"></div>
+        <div class="chat-input-row">
+          <input type="text" id="chatInput" placeholder="Ej: enciende las luces de la sala" autofocus>
+          <button id="chatSend">▶ Enviar</button>
+        </div>
+      </div>
+
+      <!-- Traces -->
+      <div class="card" style="flex:1;">
+        <div class="card-header">📡 Trazas</div>
+        <div class="trace-area" id="traceArea"></div>
+      </div>
+    </div>
+
+    <!-- ─── Right Column ─── -->
+    <div style="display:flex;flex-direction:column;gap:12px;min-height:0;overflow-y:auto;">
+
+      <!-- Devices -->
+      <div class="card">
+        <div class="card-header">📦 Dispositivos <span id="deviceCount" style="font-weight:400;">0</span></div>
+        <div class="card-body" id="deviceList"></div>
+      </div>
+
+      <!-- Sensors -->
+      <div class="card">
+        <div class="card-header">🌡️ Sensores <span id="sensorCount" style="font-weight:400;">0</span></div>
+        <div class="card-body" id="sensorList"></div>
+      </div>
+
+      <!-- Skills -->
+      <div class="card">
+        <div class="card-header">🔧 Skills</div>
+        <div class="card-body" id="skillList"></div>
+      </div>
+    </div>
+  </div>
+
+  <footer>
+    <span>Hecho con ❤️ para desarrollo local</span>
+    <span id="versionInfo"></span>
+  </footer>
+
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════
+//  1. CONFIGURACIÓN
+// ══════════════════════════════════════════════════════════
+
+const API = "http://localhost:8000";
+const POLL_INTERVAL = 3000;   // ms entre consultas de sensores
+let health = { status: "unknown", mode: "?", skills: [], llm_model: "?" };
+let deviceState = {};         // { "sala.luz_principal": { state: "on", ... }, ... }
+let sensorCache = {};         // { "sala/sensor/temperatura": { value: 24.5 }, ... }
+
+// ══════════════════════════════════════════════════════════
+//  2. CATÁLOGO — EXTENDER AQUÍ para agregar dispositivos y sensores
+// ══════════════════════════════════════════════════════════
+
+const DEVICES = [
+  { id: "sala.luz_principal",       room: "Sala",      label: "Luz principal",      icon: "💡", type: "light" },
+  { id: "sala.aire_acondicionado",  room: "Sala",      label: "Aire acondicionado", icon: "❄️", type: "climate" },
+  { id: "oficina.luz_escritorio",   room: "Oficina",   label: "Luz de escritorio",  icon: "💡", type: "light" },
+  { id: "dormitorio.calefactor",    room: "Dormitorio",label: "Calefactor",         icon: "🔥", type: "climate" },
+];
+
+const SENSORS = [
+  { topic: "sala/sensor/temperatura",   room: "Sala",      label: "Temperatura",  unit: "°C",  icon: "🌡️" },
+  { topic: "sala/sensor/humedad",       room: "Sala",      label: "Humedad",     unit: "%",   icon: "💧" },
+  { topic: "oficina/sensor/temperatura",room: "Oficina",   label: "Temperatura",  unit: "°C",  icon: "🌡️" },
+  { topic: "oficina/sensor/luminosidad",room: "Oficina",   label: "Luminosidad", unit: "lux", icon: "☀️" },
+  { topic: "dormitorio/sensor/temperatura",room: "Dormitorio",label: "Temperatura", unit: "°C", icon: "🌡️" },
+  { topic: "sala/sensor/movimiento",    room: "Sala",      label: "Movimiento",  unit: "",    icon: "🚶" },
+];
+
+// ══════════════════════════════════════════════════════════
+//  3. TRAZAS
+// ══════════════════════════════════════════════════════════
+
+function trace(msg, kind = "info") {
+  const el = document.getElementById("traceArea");
+  const t = new Date().toLocaleTimeString("es-MX", { hour12: false });
+  const cls = kind === "ok" ? "ok" : kind === "fail" ? "fail" : "info";
+  el.innerHTML += `<span class="t">[${t}]</span> <span class="${cls}">${msg}</span>\n`;
+  el.scrollTop = el.scrollHeight;
+}
+
+// ══════════════════════════════════════════════════════════
+//  4. API
+// ══════════════════════════════════════════════════════════
+
+async function apiGet(path) {
+  const res = await fetch(`${API}${path}`);
+  if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+  return res.json();
+}
+
+async function apiPost(path, body) {
+  const res = await fetch(`${API}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.detail?.error || `${res.status} ${res.statusText}`);
+  }
+  return res.json();
+}
+
+// ══════════════════════════════════════════════════════════
+//  5. HEALTH
+// ══════════════════════════════════════════════════════════
+
+async function checkHealth() {
+  try {
+    health = await apiGet("/health");
+    document.getElementById("apiStat").innerHTML = `<span class="dot green"></span> API`;
+    document.getElementById("modeBadge").textContent = health.mode || "?";
+    document.getElementById("modeBadge").className = "badge";
+    document.getElementById("skillCount").textContent = (health.skills || []).length;
+    document.getElementById("modelName").textContent = health.llm_model || "—";
+    document.getElementById("versionInfo").textContent = `v${health.version || "1.1.0"} · ${health.mode || "?"}`;
+    trace("API conectada: " + health.mode, "ok");
+    return true;
+  } catch (e) {
+    document.getElementById("apiStat").innerHTML = `<span class="dot red"></span> API`;
+    document.getElementById("modeBadge").textContent = "desconectado";
+    document.getElementById("modeBadge").className = "badge err";
+    trace("API no disponible: " + e.message, "fail");
+    return false;
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  6. SKILLS
+// ══════════════════════════════════════════════════════════
+
+async function loadSkills() {
+  try {
+    const data = await apiGet("/skills");
+    const el = document.getElementById("skillList");
+    el.innerHTML = Object.entries(data).map(([name, skill]) => `
+      <div class="skill-item">
+        <div class="name">${name}</div>
+        <div class="tools">${skill.tools.map(t => t.name).join(", ")}</div>
+      </div>
+    `).join("");
+    trace(`Skills cargados: ${Object.keys(data).length}`, "ok");
+  } catch (e) {
+    trace("Error cargando skills: " + e.message, "fail");
+  }
+}
+
+// ══════════════════════════════════════════════════════════
+//  7. CHAT
+// ══════════════════════════════════════════════════════════
+
+function addChatMessage(text, kind) {
+  const el = document.getElementById("chatMessages");
+  const div = document.createElement("div");
+  div.className = `msg ${kind}`;
+  div.textContent = text;
+  el.appendChild(div);
+  el.scrollTop = el.scrollHeight;
+}
+
+async function sendChat() {
+  const input = document.getElementById("chatInput");
+  const btn = document.getElementById("chatSend");
+  const msg = input.value.trim();
+  if (!msg) return;
+
+  input.value = "";
+  btn.disabled = true;
+  addChatMessage(msg, "user");
+  trace(`POST /chat → "${msg.slice(0, 50)}${msg.length > 50 ? "…" : ""}"`, "info");
+
+  try {
+    const res = await apiPost("/chat", { message: msg });
+    if (res.validated) {
+      addChatMessage(`✅ ${res.skill} → ${res.device_id} : ${res.action} ${JSON.stringify(res.params)}`, "system");
+      trace(`Comando validado: ${res.device_id} → ${res.action}`, "ok");
+      updateDeviceState(res);
+    } else if (res.error) {
+      addChatMessage(`❌ ${res.error}`, "error");
+      trace(`Chat rechazado: ${res.error}`, "fail");
+    }
+  } catch (e) {
+    if (e.message.includes("LLM no configurado")) {
+      addChatMessage("⚠️ LLM no configurado — conecta Ollama o usa un mock para probar", "error");
+    } else {
+      addChatMessage(`❌ Error: ${e.message}`, "error");
+    }
+    trace(`Error en chat: ${e.message}`, "fail");
+  }
+  btn.disabled = false;
+  input.focus();
+}
+
+function updateDeviceState(res) {
+  const dev = DEVICES.find(d => d.id === res.device_id);
+  if (!dev) {
+    trace(`Dispositivo desconocido en respuesta: ${res.device_id}`, "warn");
+    return;
+  }
+  const state = deviceState[res.device_id] || { state: "unknown" };
+  state.state = res.action === "off" ? "off" : "on";
+  if (res.action === "set_brightness") state.brightness = res.params.brightness;
+  if (res.action === "set_temperature") state.temperature = res.params.temperature;
+  if (res.action === "set_mode") state.mode = res.params.mode;
+  deviceState[res.device_id] = state;
+  renderDevices();
+}
+
+// ══════════════════════════════════════════════════════════
+//  8. RENDER: DISPOSITIVOS
+// ══════════════════════════════════════════════════════════
+
+function renderDevices() {
+  const rooms = [...new Set(DEVICES.map(d => d.room))];
+  const el = document.getElementById("deviceList");
+  el.innerHTML = rooms.map(room => {
+    const devs = DEVICES.filter(d => d.room === room);
+    return `
+      <div class="room-label">${room}</div>
+      ${devs.map(d => {
+        const st = deviceState[d.id] || { state: "unknown" };
+        const cls = st.state === "on" ? "on" : st.state === "off" ? "off" : "unknown";
+        let meta = "";
+        if (st.brightness !== undefined) meta += `brillo: ${st.brightness}% `;
+        if (st.temperature !== undefined) meta += `${st.temperature}°C `;
+        if (st.mode !== undefined) meta += `· ${st.mode} `;
+        return `
+          <div class="device-card">
+            <div class="top">
+              <span class="name">${d.icon} ${d.label}</span>
+              <span class="status ${cls}">${st.state.toUpperCase()}</span>
+            </div>
+            ${meta ? `<div class="meta">${meta.trim()}</div>` : ""}
+          </div>
+        `;
+      }).join("")
+    `;
+  }).join("");
+  document.getElementById("deviceCount").textContent = DEVICES.length;
+}
+
+// ══════════════════════════════════════════════════════════
+//  9. RENDER: SENSORES
+// ══════════════════════════════════════════════════════════
+
+function renderSensors() {
+  const el = document.getElementById("sensorList");
+  el.innerHTML = `<div class="sensor-grid">${SENSORS.map(s => {
+    const data = sensorCache[s.topic];
+    const val = data !== undefined ? data.value : null;
+    const display = val !== null ? `${val}${s.unit}` : "—";
+    const na = val === null ? "na" : "";
+    return `
+      <div class="sensor-item">
+        <span>${s.icon} ${s.label}</span>
+        <span class="val ${na}">${display}</span>
+      </div>
+    `;
+  }).join("")}</div>`;
+  document.getElementById("sensorCount").textContent = SENSORS.length;
+}
+
+async function pollSensors() {
+  for (const s of SENSORS) {
+    try {
+      const data = await apiGet(`/state/${s.topic}`);
+      if (data.state !== null && data.state !== undefined) {
+        sensorCache[s.topic] = data.state;
+      }
+    } catch { /* silently ignore — MQTT may not be connected */ }
+  }
+  renderSensors();
+}
+
+// ══════════════════════════════════════════════════════════
+//  10. EVENTOS
+// ══════════════════════════════════════════════════════════
+
+document.getElementById("chatSend").addEventListener("click", sendChat);
+document.getElementById("chatInput").addEventListener("keydown", e => {
+  if (e.key === "Enter") sendChat();
+});
+
+// ══════════════════════════════════════════════════════════
+//  11. INICIO
+// ══════════════════════════════════════════════════════════
+
+(async function init() {
+  trace("🔧 AgentAI IoT Dashboard iniciado", "info");
+  trace("Conectando a API: " + API, "info");
+
+  const ok = await checkHealth();
+  if (ok) {
+    await loadSkills();
+    renderDevices();
+    renderSensors();
+    setInterval(pollSensors, POLL_INTERVAL);
+    trace("Dashboard listo — esperando comandos", "ok");
+  } else {
+    document.getElementById("chatMessages").innerHTML = `
+      <div class="msg error" style="align-self:center;text-align:center;max-width:100%;">
+        ❌ No se pudo conectar con el backend en <strong>${API}</strong><br>
+        Asegúrate de que el servidor esté corriendo:<br>
+        <code style="font-size:12px;background:#1f2937;padding:2px 6px;border-radius:4px;">
+          uvicorn src.main:app --reload
+        </code>
+      </div>`;
+  }
+})();
+</script>
+</body>
+</html>

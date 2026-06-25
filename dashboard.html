@@ -355,10 +355,14 @@ let sensorCache = {};         // { "sala/sensor/temperatura": { value: 24.5 }, .
 // ══════════════════════════════════════════════════════════
 
 const DEVICES = [
-  { id: "sala.luz_principal",       room: "Sala",      label: "Luz principal",      icon: "💡", type: "light" },
-  { id: "sala.aire_acondicionado",  room: "Sala",      label: "Aire acondicionado", icon: "❄️", type: "climate" },
-  { id: "oficina.luz_escritorio",   room: "Oficina",   label: "Luz de escritorio",  icon: "💡", type: "light" },
-  { id: "dormitorio.calefactor",    room: "Dormitorio",label: "Calefactor",         icon: "🔥", type: "climate" },
+  { id: "sala.luz_principal",       room: "Sala",      label: "Luz principal",       icon: "💡", type: "light" },
+  { id: "sala.aire_acondicionado",  room: "Sala",      label: "Aire acondicionado",  icon: "❄️", type: "climate" },
+  { id: "oficina.luz_escritorio",   room: "Oficina",   label: "Luz de escritorio",   icon: "💡", type: "light" },
+  { id: "dormitorio.calefactor",    room: "Dormitorio",label: "Calefactor",          icon: "🔥", type: "climate" },
+  { id: "sala.persiana",            room: "Sala",      label: "Persiana motorizada", icon: "🪟", type: "cover" },
+  { id: "sala.ventilador",          room: "Sala",      label: "Ventilador de techo", icon: "🌀", type: "fan" },
+  { id: "cocina.cafetera",          room: "Cocina",    label: "Cafetera",            icon: "☕", type: "appliance" },
+  { id: "oficina.enchufe",          room: "Oficina",   label: "Enchufe inteligente", icon: "🔌", type: "switch" },
 ];
 
 const SENSORS = [
@@ -367,7 +371,8 @@ const SENSORS = [
   { topic: "oficina/sensor/temperatura",room: "Oficina",   label: "Temperatura",  unit: "°C",  icon: "🌡️" },
   { topic: "oficina/sensor/luminosidad",room: "Oficina",   label: "Luminosidad", unit: "lux", icon: "☀️" },
   { topic: "dormitorio/sensor/temperatura",room: "Dormitorio",label: "Temperatura", unit: "°C", icon: "🌡️" },
-  { topic: "sala/sensor/movimiento",    room: "Sala",      label: "Movimiento",  unit: "",    icon: "🚶" },
+  { topic: "sala/sensor/movimiento",    room: "Sala",      label: "Movimiento",         unit: "",    icon: "🚶" },
+  { topic: "sala/sensor/puerta",       room: "Sala",      label: "Puerta (seguridad)", unit: "",    icon: "🔒" },
 ];
 
 // ══════════════════════════════════════════════════════════
@@ -506,6 +511,10 @@ function updateDeviceState(res) {
   if (res.action === "set_brightness") state.brightness = res.params.brightness;
   if (res.action === "set_temperature") state.temperature = res.params.temperature;
   if (res.action === "set_mode") state.mode = res.params.mode;
+  if (res.action === "set_position") state.position = res.params.position;
+  if (res.action === "set_speed") state.speed = res.params.speed;
+  if (res.action === "open") state.position = 100;
+  if (res.action === "close") state.position = 0;
   deviceState[res.device_id] = state;
   renderDevices();
 }
@@ -528,6 +537,8 @@ function renderDevices() {
         if (st.brightness !== undefined) meta += `brillo: ${st.brightness}% `;
         if (st.temperature !== undefined) meta += `${st.temperature}°C `;
         if (st.mode !== undefined) meta += `· ${st.mode} `;
+        if (st.position !== undefined) meta += `posición: ${st.position}% `;
+        if (st.speed !== undefined) meta += `velocidad: ${st.speed}% `;
         return `
           <div class="device-card">
             <div class="top">

@@ -9,6 +9,9 @@ from config.settings import settings
 from src.agent.engine import engine
 from src.agent.skills.climate import ClimateSkill
 from src.agent.skills.lighting import LightingSkill
+from src.agent.skills.cover import CoverSkill
+from src.agent.skills.fan import FanSkill
+from src.agent.skills.switch import SwitchSkill
 
 logger = logging.getLogger(__name__)
 
@@ -17,6 +20,9 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     engine.register_skill(ClimateSkill())
     engine.register_skill(LightingSkill())
+    engine.register_skill(CoverSkill())
+    engine.register_skill(FanSkill())
+    engine.register_skill(SwitchSkill())
     logger.info(
         "AgentAI IoT iniciado — modo: %s, prefijo MQTT: %s",
         settings.mode,

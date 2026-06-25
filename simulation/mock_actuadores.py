@@ -33,6 +33,30 @@ def describe_command(topic: str, payload: dict[str, Any]) -> str:
         mode = payload.get("params", {}).get("mode", "?")
         return f"❄️ {label} ({room}) → MODO {mode.upper()}"
 
+    device_type = device_info.get("type", "")
+    if device_type == "cover":
+        if action == "open":
+            return f"🪟 {label} ({room}) → SUBIR"
+        if action == "close":
+            return f"🪟 {label} ({room}) → BAJAR"
+        if action == "set_position":
+            position = payload.get("params", {}).get("position", "?")
+            return f"🪟 {label} ({room}) → POSICIÓN {position}%"
+    if device_type == "fan":
+        if action == "on":
+            return f"🌀 {label} ({room}) → ENCENDIDO"
+        if action == "off":
+            return f"🌀 {label} ({room}) → APAGADO"
+        if action == "set_speed":
+            speed = payload.get("params", {}).get("speed", "?")
+            return f"🌀 {label} ({room}) → VELOCIDAD {speed}%"
+
+    if device_type in ("switch", "appliance"):
+        if action == "on":
+            return f"🔌 {label} ({room}) → ENCENDIDO"
+        if action == "off":
+            return f"🔌 {label} ({room}) → APAGADO"
+
     return f"⚙️ {label} ({room}) → {action} {payload.get('params', {})}"
 
 
@@ -45,15 +69,18 @@ def build_status_response(topic: str, payload: dict[str, Any]) -> dict[str, Any]
     params = payload.get("params", {})
     device_info = DEVICE_REGISTRY.get(full_device_id, {})
 
-    status: dict[str, Any] = {"state": "on" if action != "off" else "off"}
+    off_actions = {"off", "close", "turn_off"}
+    status: dict[str, Any] = {"state": "off" if action in off_actions else "on"}
 
-    if device_info.get("type") == "light":
+    device_type = device_info.get("type", "")
+
+    if device_type == "light":
         if action == "set_brightness":
             status["brightness"] = params.get("brightness", 100)
         elif status["state"] == "on":
             status["brightness"] = 100
 
-    if device_info.get("type") == "climate":
+    if device_type == "climate":
         if action == "set_temperature":
             status["temperature"] = params.get("temperature", 22)
             status["mode"] = "cool"
@@ -63,6 +90,20 @@ def build_status_response(topic: str, payload: dict[str, Any]) -> dict[str, Any]
         elif status["state"] == "on":
             status["temperature"] = 22
             status["mode"] = "cool"
+
+    if device_type == "cover":
+        if action == "set_position":
+            status["position"] = params.get("position", 100)
+        elif action == "open":
+            status["position"] = 100
+        elif action == "close":
+            status["position"] = 0
+
+    if device_type == "fan":
+        if action == "set_speed":
+            status["speed"] = params.get("speed", 100)
+        elif status["state"] == "on":
+            status["speed"] = 100
 
     return status
 

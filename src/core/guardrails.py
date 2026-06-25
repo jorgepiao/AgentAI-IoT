@@ -28,6 +28,26 @@ DEVICE_REGISTRY: dict[str, dict[str, Any]] = {
         "min_temp": 16,
         "max_temp": 30,
     },
+    "sala.persiana": {
+        "type": "cover",
+        "label": "Persiana motorizada de la sala",
+        "min_position": 0,
+        "max_position": 100,
+    },
+    "sala.ventilador": {
+        "type": "fan",
+        "label": "Ventilador de techo de la sala",
+        "min_speed": 0,
+        "max_speed": 100,
+    },
+    "cocina.cafetera": {
+        "type": "appliance",
+        "label": "Cafetera inteligente",
+    },
+    "oficina.enchufe": {
+        "type": "switch",
+        "label": "Enchufe inteligente de la oficina",
+    },
 }
 
 
@@ -88,6 +108,48 @@ class ClimateCommand(DeviceCommand):
         return self
 
 
+class CoverCommand(DeviceCommand):
+    action: Literal["open", "close", "set_position"]
+    params: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_cover_params(self):
+        device = DEVICE_REGISTRY.get(self.device_id)
+        if not device or device["type"] != "cover":
+            raise ValueError(f"'{self.device_id}' no es una persiana/cubierta")
+
+        if self.action == "set_position":
+            position = self.params.get("position", 0)
+            lo = device["min_position"]
+            hi = device["max_position"]
+            if not isinstance(position, (int, float)) or not (lo <= position <= hi):
+                raise ValueError(
+                    f"Posición debe ser un número entre {lo}-{hi}, recibido: {position}"
+                )
+        return self
+
+
+class FanCommand(DeviceCommand):
+    action: Literal["on", "off", "set_speed"]
+    params: dict[str, Any] = Field(default_factory=dict)
+
+    @model_validator(mode="after")
+    def _validate_fan_params(self):
+        device = DEVICE_REGISTRY.get(self.device_id)
+        if not device or device["type"] != "fan":
+            raise ValueError(f"'{self.device_id}' no es un ventilador")
+
+        if self.action == "set_speed":
+            speed = self.params.get("speed", 0)
+            lo = device["min_speed"]
+            hi = device["max_speed"]
+            if not isinstance(speed, (int, float)) or not (lo <= speed <= hi):
+                raise ValueError(
+                    f"Velocidad debe ser un número entre {lo}-{hi}, recibido: {speed}"
+                )
+        return self
+
+
 def validate_command(data: dict[str, Any]) -> DeviceCommand:
     device_id = data.get("device_id", "")
     device = DEVICE_REGISTRY.get(device_id)
@@ -95,7 +157,7 @@ def validate_command(data: dict[str, Any]) -> DeviceCommand:
     if not device:
         return DeviceCommand(**data)
 
-    type_map = {"light": LightCommand, "climate": ClimateCommand}
+    type_map = {"light": LightCommand, "climate": ClimateCommand, "cover": CoverCommand, "fan": FanCommand}
     model_class = type_map.get(device["type"], DeviceCommand)
 
     return model_class(**data)

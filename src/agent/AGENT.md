@@ -50,6 +50,10 @@ Ambiente: simulación (prefijo MQTT: `sim/`). Dispositivos disponibles:
 | `oficina.luz_escritorio` | light | Luz del escritorio | `on`, `off`, `set_brightness` | `brightness` (0-100) |
 | `sala.aire_acondicionado` | climate | Aire acondicionado de la sala | `set_temperature`, `set_mode`, `off` | `temperature` (16-30°C), `mode` (`cool`, `heat`, `fan`, `auto`, `dry`) |
 | `dormitorio.calefactor` | climate | Calefactor del dormitorio | `set_temperature`, `set_mode`, `off` | `temperature` (16-30°C), `mode` (`cool`, `heat`, `fan`, `auto`, `dry`) |
+| `sala.persiana` | cover | Persiana motorizada de la sala | `open`, `close`, `set_position` | `position` (0-100) |
+| `sala.ventilador` | fan | Ventilador de techo de la sala | `on`, `off`, `set_speed` | `speed` (0-100) |
+| `cocina.cafetera` | appliance | Cafetera inteligente | `on`, `off` | — |
+| `oficina.enchufe` | switch | Enchufe inteligente de la oficina | `on`, `off` | — |
 
 ---
 
@@ -66,6 +70,44 @@ Control de iluminación: encendido, apagado, ajuste de brillo.
 **Ejemplos:**
 - "Prende la luz de la sala" → `set_light_state(device_id="sala.luz_principal", state="on")`
 - "Atenúa la luz al 50%" → `set_brightness(device_id="oficina.luz_escritorio", brightness=50)`
+
+### Skill: persianas
+Control de persianas y cortinas motorizadas: subir, bajar y ajustar posición.
+
+| Herramienta | Descripción | Parámetros |
+|-------------|-------------|------------|
+| `open_cover` | Subir o abrir completamente una persiana | `device_id` |
+| `close_cover` | Bajar o cerrar completamente una persiana | `device_id` |
+| `set_cover_position` | Ajustar la posición (0=cerrada, 100=abierta) | `device_id`, `position` (0-100) |
+
+**Ejemplos:**
+- "Sube la persiana de la sala" → `open_cover(device_id="sala.persiana")`
+- "Baja la persiana al 50%" → `set_cover_position(device_id="sala.persiana", position=50)`
+
+### Skill: ventilacion
+Control de ventiladores de techo: encendido, apagado y velocidad.
+
+| Herramienta | Descripción | Parámetros |
+|-------------|-------------|------------|
+| `turn_on_fan` | Encender un ventilador | `device_id` |
+| `turn_off_fan` | Apagar un ventilador | `device_id` |
+| `set_fan_speed` | Ajustar velocidad (0-100%) | `device_id`, `speed` (0-100) |
+
+**Ejemplos:**
+- "Prende el ventilador de la sala" → `turn_on_fan(device_id="sala.ventilador")`
+- "Pon el ventilador al 50%" → `set_fan_speed(device_id="sala.ventilador", speed=50)`
+
+### Skill: interruptores
+Control de dispositivos on/off: enchufes inteligentes, cafeteras, electrodomésticos.
+
+| Herramienta | Descripción | Parámetros |
+|-------------|-------------|------------|
+| `turn_on` | Encender un dispositivo | `device_id` |
+| `turn_off` | Apagar un dispositivo | `device_id` |
+
+**Ejemplos:**
+- "Prende la cafetera" → `turn_on(device_id="cocina.cafetera")`
+- "Apaga el enchufe de la oficina" → `turn_off(device_id="oficina.enchufe")`
 
 ### Skill: clima
 Control de climatización: temperatura, modos de operación.

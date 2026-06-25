@@ -15,6 +15,7 @@ SENSORS: list[dict[str, Any]] = [
     {"topic": "oficina/sensor/luminosidad", "range": (50, 800), "unit": "lux", "decimals": 0},
     {"topic": "dormitorio/sensor/temperatura", "range": (16.0, 26.0), "unit": "celsius", "decimals": 1},
     {"topic": "sala/sensor/movimiento", "range": (0, 1), "unit": "binary", "decimals": 0},
+    {"topic": "sala/sensor/puerta", "range": (0, 1), "unit": "binary", "decimals": 0},
 ]
 
 

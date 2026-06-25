@@ -6,6 +6,8 @@ from src.core.guardrails import (
     DeviceCommand,
     LightCommand,
     ClimateCommand,
+    CoverCommand,
+    FanCommand,
     validate_command,
 )
 
@@ -101,6 +103,88 @@ class TestClimateCommand:
             )
 
 
+class TestCoverCommand:
+    def test_cover_open_valid(self):
+        cmd = CoverCommand(device_id="sala.persiana", action="open")
+        assert cmd.action == "open"
+
+    def test_cover_close_valid(self):
+        cmd = CoverCommand(device_id="sala.persiana", action="close")
+        assert cmd.action == "close"
+
+    def test_cover_set_position_valid(self):
+        cmd = CoverCommand(
+            device_id="sala.persiana",
+            action="set_position",
+            params={"position": 50},
+        )
+        assert cmd.params["position"] == 50
+
+    def test_cover_set_position_out_of_range(self):
+        with pytest.raises(ValueError, match="Posición.*0-100"):
+            CoverCommand(
+                device_id="sala.persiana",
+                action="set_position",
+                params={"position": 150},
+            )
+
+    def test_cover_set_position_negative(self):
+        with pytest.raises(ValueError, match="Posición.*0-100"):
+            CoverCommand(
+                device_id="sala.persiana",
+                action="set_position",
+                params={"position": -5},
+            )
+
+    def test_non_cover_device_rejected(self):
+        with pytest.raises(ValueError, match="no es una persiana"):
+            CoverCommand(
+                device_id="sala.luz_principal",
+                action="open",
+            )
+
+
+class TestFanCommand:
+    def test_fan_on_valid(self):
+        cmd = FanCommand(device_id="sala.ventilador", action="on")
+        assert cmd.action == "on"
+
+    def test_fan_off_valid(self):
+        cmd = FanCommand(device_id="sala.ventilador", action="off")
+        assert cmd.action == "off"
+
+    def test_fan_set_speed_valid(self):
+        cmd = FanCommand(
+            device_id="sala.ventilador",
+            action="set_speed",
+            params={"speed": 75},
+        )
+        assert cmd.params["speed"] == 75
+
+    def test_fan_set_speed_out_of_range(self):
+        with pytest.raises(ValueError, match="Velocidad.*0-100"):
+            FanCommand(
+                device_id="sala.ventilador",
+                action="set_speed",
+                params={"speed": 120},
+            )
+
+    def test_fan_set_speed_negative(self):
+        with pytest.raises(ValueError, match="Velocidad.*0-100"):
+            FanCommand(
+                device_id="sala.ventilador",
+                action="set_speed",
+                params={"speed": -1},
+            )
+
+    def test_non_fan_device_rejected(self):
+        with pytest.raises(ValueError, match="no es un ventilador"):
+            FanCommand(
+                device_id="sala.luz_principal",
+                action="on",
+            )
+
+
 class TestValidateCommand:
     def test_validate_light_command(self):
         result = validate_command({
@@ -132,3 +216,35 @@ class TestValidateCommand:
                 "action": "set_temperature",
                 "params": {"temperature": 50},
             })
+
+    def test_validate_cover_command(self):
+        result = validate_command({
+            "device_id": "sala.persiana",
+            "action": "set_position",
+            "params": {"position": 50},
+        })
+        assert isinstance(result, CoverCommand)
+
+    def test_validate_fan_command(self):
+        result = validate_command({
+            "device_id": "sala.ventilador",
+            "action": "set_speed",
+            "params": {"speed": 75},
+        })
+        assert isinstance(result, FanCommand)
+
+    def test_validate_switch_command_falls_to_base(self):
+        result = validate_command({
+            "device_id": "oficina.enchufe",
+            "action": "on",
+            "params": {},
+        })
+        assert isinstance(result, DeviceCommand)
+
+    def test_validate_appliance_command_falls_to_base(self):
+        result = validate_command({
+            "device_id": "cocina.cafetera",
+            "action": "off",
+            "params": {},
+        })
+        assert isinstance(result, DeviceCommand)

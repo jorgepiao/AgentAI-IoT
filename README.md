@@ -93,7 +93,10 @@ agentai-iot/
 │   │   └── skills/          # Módulos de Habilidades
 │   │       ├── base.py      # Clase abstracta e interfaz común
 │   │       ├── climate.py   # Skill de clima (AC/calefacción)
-│   │       └── lighting.py  # Skill de iluminación (focos/dimmers)
+│   │       ├── cover.py     # Skill de persianas y cortinas
+│   │       ├── fan.py       # Skill de ventilación
+│   │       ├── lighting.py  # Skill de iluminación (focos/dimmers)
+│   │       └── switch.py    # Skill de on/off (enchufes, cafeteras)
 │   │
 │   ├── core/                # Infraestructura de red y seguridad
 │   │   ├── mqtt_client.py   # Cliente MQTT asíncrono + caché
@@ -145,13 +148,24 @@ cp .env.template .env
 # Editar .env con tu configuración local
 ```
 
-### Ejecución
+### Ejecución (3 ventanas)
+
+```powershell
+# Abre API + sensores + actuadores cada uno en su propia ventana
+.\scripts\run_all.ps1
+```
+
+O manualmente, cada componente en una terminal separada:
 
 ```bash
-# Modo simulación (sin hardware, recomendado para desarrollo)
-uvicorn src.main:app --reload
+# Terminal 1 — API
+uvicorn src.main:app --reload --host 0.0.0.0 --port 8000
 
-# La API estará disponible en http://localhost:8000
+# Terminal 2 — Sensores simulados
+python -m simulation.mock_sensors --dry-run --interval 5
+
+# Terminal 3 — Actuadores simulados
+python -m simulation.mock_actuadores --dry-run
 ```
 
 ### Verificación
@@ -187,8 +201,8 @@ agentai-iot/
 | Panel | Descripción |
 |-------|-------------|
 | Chat | Envía comandos en lenguaje natural, ve las respuestas validadas |
-| Dispositivos | Estado actual de luces y clima (ON/OFF, temperatura, brillo) |
-| Sensores | Lecturas de telemetría (temperatura, humedad, luminosidad) |
+| Dispositivos | Estado actual de luces, clima, persianas, ventiladores, enchufes y cafetera |
+| Sensores | Lecturas de telemetría (temperatura, humedad, luminosidad, movimiento, puerta) |
 | Skills | Herramientas disponibles por cada skill |
 | Trazas | Historial de llamadas API y eventos del sistema |
 

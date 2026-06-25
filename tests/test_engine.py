@@ -171,3 +171,62 @@ class TestToolDefinition:
         )
         assert tool.name == "test_tool"
         assert tool.model_dump()["name"] == "test_tool"
+
+
+class TestIntegrationRealSkills:
+    @pytest.fixture
+    def engine_with_real_skills(self):
+        from src.agent.skills.climate import ClimateSkill
+        from src.agent.skills.lighting import LightingSkill
+
+        eng = Engine()
+        eng.register_skill(ClimateSkill())
+        eng.register_skill(LightingSkill())
+        return eng
+
+    @pytest.mark.asyncio
+    async def test_lighting_skill_real(self, engine_with_real_skills):
+        async def mock_llm(prompt: str) -> str:
+            return '{"device_id": "sala.luz_principal", "action": "on", "params": {}}'
+
+        result = await engine_with_real_skills.process(
+            "enciende las luces de la sala", llm_callable=mock_llm
+        )
+        assert result["validated"] is True
+        assert result["skill"] == "iluminacion"
+        assert result["device_id"] == "sala.luz_principal"
+
+    @pytest.mark.asyncio
+    async def test_climate_skill_real(self, engine_with_real_skills):
+        async def mock_llm(prompt: str) -> str:
+            return (
+                '{"device_id": "sala.aire_acondicionado", '
+                '"action": "set_temperature", '
+                '"params": {"temperature": 24}}'
+            )
+
+        result = await engine_with_real_skills.process(
+            "pon el aire a 24 grados", llm_callable=mock_llm
+        )
+        assert result["validated"] is True
+        assert result["skill"] == "clima"
+        assert result["device_id"] == "sala.aire_acondicionado"
+        assert result["params"]["temperature"] == 24
+
+    @pytest.mark.asyncio
+    async def test_llm_returns_wrong_device_type_still_validates(self, engine_with_real_skills):
+        async def mock_llm(prompt: str) -> str:
+            return '{"device_id": "sala.luz_principal", "action": "off", "params": {}}'
+
+        result = await engine_with_real_skills.process(
+            "apaga el clima", llm_callable=mock_llm
+        )
+        assert result["validated"] is True
+        assert result["skill"] == "clima"
+        assert result["device_id"] == "sala.luz_principal"
+
+    @pytest.mark.asyncio
+    async def test_router_selects_correct_skill_by_keyword(self, engine_with_real_skills):
+        assert engine_with_real_skills.detect_skill("prende la luz").name == "iluminacion"
+        assert engine_with_real_skills.detect_skill("sube la temperatura").name == "clima"
+        assert engine_with_real_skills.detect_skill("música") is None

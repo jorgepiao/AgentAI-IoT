@@ -180,6 +180,53 @@ curl -X POST http://localhost:8000/chat \
   -d '{"message": "Enciende las luces de la sala"}'
 ```
 
+## Docker
+
+### Requisitos
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) instalado y corriendo
+
+### Servicios
+
+| Servicio | Imagen | Puerto |
+|---|---|---|
+| `mosquitto` | `eclipse-mosquitto:2` | `1883` |
+| `api` | Construida desde `Dockerfile` | `8000` |
+
+### Uso
+
+```bash
+# Construir la imagen de la API (solo la primera vez o al cambiar requirements.txt)
+docker compose build
+
+# Levantar todos los servicios en segundo plano
+docker compose up -d
+
+# Ver logs en tiempo real (opcional)
+docker compose logs -f
+
+# Verificar que la API responde
+curl http://localhost:8000/health
+
+# Ejecutar simuladores (en otra terminal, fuera del contenedor)
+python -m simulation.mock_sensors --dry-run --interval 5
+python -m simulation.mock_actuadores --dry-run
+
+# Abrir el dashboard
+start dashboard.html
+
+# Detener todo
+docker compose down
+```
+
+**Nota:** Los cambios en `src/` se reflejan automáticamente gracias al volumen montado y `--reload`. Solo necesitas reconstruir si agregas dependencias a `requirements.txt`.
+
+**Importante para producción:** No uses este `docker-compose.yml` en producción sin antes:
+1. Quitar `volumes` (el código debe ir dentro de la imagen)
+2. Quitar `--reload` 
+3. Configurar autenticación en Mosquitto (`allow_anonymous false`)
+4. Usar credenciales seguras via `.env`
+
 ## Dashboard de Prueba
 
 Interfaz web independiente para probar el sistema visualmente.

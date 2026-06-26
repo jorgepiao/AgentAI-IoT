@@ -1,7 +1,7 @@
 $ErrorActionPreference = "Stop"
 
-$root = $PSScriptRoot | Split-Path -Parent
-$venv = Join-Path $root ".venv" "Scripts" "Activate.ps1"
+$root = Split-Path -Parent $PSScriptRoot
+$venv = "$root\.venv\Scripts\Activate.ps1"
 
 if (-not (Test-Path $venv)) {
     Write-Host "❌ No se encontró .venv en $venv" -ForegroundColor Red
